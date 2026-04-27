@@ -44,6 +44,12 @@
       "typedRoutes": true,
       "reactCompiler": true,
       "baseUrl": "/web-cloud-ynov"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9c7b2c1b-09df-4362-aad1-7af676d8aeb1"
+      }
     }
   }
 }
