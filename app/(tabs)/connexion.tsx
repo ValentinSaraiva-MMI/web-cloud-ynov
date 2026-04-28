@@ -1,21 +1,65 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput } from "react-native";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
+import { useEffect, useRef, useState } from "react";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { signin } from "../../firebase/auth_signin_password";
+import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
+import { firebaseConfig } from "../../firebaseConfig";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Toast, useToast } from "@/components/toast";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Au moins 8 caractères, une majuscule, une minuscule, un chiffre
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
+
+type Mode = "email" | "phone-step1" | "phone-step2";
 
 export default function ConnexionScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  const [mode, setMode] = useState<Mode>("email");
+  const [phone, setPhone] = useState("");
+  const [phonemailErroror, setPhonemailErroror] = useState("");
+  const [smsCode, setSmsCode] = useState("");
+  const [smsError, setSmsError] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+
+  const recaptchaRef = useRef<any>(null);
+  const webVerifierRef = useRef<any>(null);
   const { toast, show, hide } = useToast();
+
+  // Initialise le reCAPTCHA visible dès l'entrée en mode téléphone
+  useEffect(() => {
+    if (mode === "phone-step1" && Platform.OS === "web") {
+      (async () => {
+        if (!webVerifierRef.current) {
+          const { RecaptchaVerifier, getAuth } = await import("firebase/auth");
+          webVerifierRef.current = new RecaptchaVerifier(
+            getAuth(),
+            "recaptcha-container",
+            { size: "normal" },
+          );
+          await webVerifierRef.current.render();
+        }
+      })();
+    }
+    // Détruit le verifier quand on quitte le mode téléphone
+    if (mode === "email" && webVerifierRef.current) {
+      webVerifierRef.current.clear();
+      webVerifierRef.current = null;
+    }
+  }, [mode]);
 
   const validateEmail = (value: string) => {
     if (!value) return "L'email est requis.";
@@ -30,12 +74,18 @@ export default function ConnexionScreen() {
     return "";
   };
 
-  const handleSubmit = async () => {
-    const eErr = validateEmail(email);
-    const pErr = validatePassword(password);
-    setEmailError(eErr);
-    setPasswordError(pErr);
-    if (eErr || pErr) return;
+  const validatePhone = (value: string) => {
+    if (!value) return "Le numéro est requis.";
+    if (!PHONE_REGEX.test(value)) return "Format invalide. Ex: +33612345678";
+    return "";
+  };
+
+  const handleEmailSubmit = async () => {
+    const emailError = validateEmail(email);
+    const phonemailErroror = validatePassword(password);
+    setEmailError(emailError);
+    setPasswordError(phonemailErroror);
+    if (emailError || phonemailErroror) return;
 
     try {
       await signin(email, password);
@@ -45,42 +95,165 @@ export default function ConnexionScreen() {
     }
   };
 
+  const handleSendCode = async () => {
+    const phonemailErroror = validatePhone(phone);
+    setPhonemailErroror(phonemailErroror);
+    if (phonemailErroror) return;
+
+    try {
+      const appVerifier =
+        Platform.OS === "web" ? webVerifierRef.current : recaptchaRef.current;
+      const result = await sendSmsCode(phone, appVerifier);
+      setConfirmationResult(result);
+      setMode("phone-step2");
+    } catch {
+      if (webVerifierRef.current) {
+        webVerifierRef.current.clear();
+        webVerifierRef.current = null;
+      }
+      show("Impossible d'envoyer le SMS. Vérifiez le numéro.", "error");
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!smsCode || smsCode.length !== 6) {
+      setSmsError("Le code doit contenir 6 chiffres.");
+      return;
+    }
+    setSmsError("");
+
+    try {
+      await verifySmsCode(confirmationResult, smsCode);
+      show("Connexion réussie !", "success");
+    } catch {
+      show("Code incorrect ou expiré.", "error");
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Toast {...toast} onHide={hide} />
+
+      {Platform.OS !== "web" && (
+        <FirebaseRecaptchaVerifierModal
+          ref={recaptchaRef}
+          firebaseConfig={firebaseConfig}
+        />
+      )}
+
       <ThemedText type="title">Connexion</ThemedText>
 
-      <TextInput
-        style={[styles.input, emailError ? styles.inputError : null]}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        value={email}
-        onChangeText={(v) => {
-          setEmail(v);
-          setEmailError(validateEmail(v));
-        }}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+      {mode === "email" && (
+        <>
+          <TextInput
+            style={[styles.input, emailError ? styles.inputError : null]}
+            placeholder="Email"
+            placeholderTextColor="#888"
+            value={email}
+            onChangeText={(v) => {
+              setEmail(v);
+              setEmailError(validateEmail(v));
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {emailError ? (
+            <Text style={styles.errorText}>{emailError}</Text>
+          ) : null}
 
-      <TextInput
-        style={[styles.input, passwordError ? styles.inputError : null]}
-        placeholder="Mot de passe"
-        placeholderTextColor="#888"
-        value={password}
-        onChangeText={(v) => {
-          setPassword(v);
-          setPasswordError(validatePassword(v));
-        }}
-        secureTextEntry
-      />
-      {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          <TextInput
+            style={[styles.input, passwordError ? styles.inputError : null]}
+            placeholder="Mot de passe"
+            placeholderTextColor="#888"
+            value={password}
+            onChangeText={(v) => {
+              setPassword(v);
+              setPasswordError(validatePassword(v));
+            }}
+            secureTextEntry
+          />
+          {passwordError ? (
+            <Text style={styles.errorText}>{passwordError}</Text>
+          ) : null}
 
-      <Pressable style={styles.button} onPress={handleSubmit}>
-        <ThemedText style={styles.buttonText}>Se connecter</ThemedText>
-      </Pressable>
+          <Pressable style={styles.button} onPress={handleEmailSubmit}>
+            <ThemedText style={styles.buttonText}>Se connecter</ThemedText>
+          </Pressable>
+
+          <Text style={styles.separator}>── ou ──</Text>
+
+          <Pressable
+            style={styles.buttonOutline}
+            onPress={() => setMode("phone-step1")}
+          >
+            <ThemedText style={styles.buttonOutlineText}>
+              Par téléphoneeeee
+            </ThemedText>
+          </Pressable>
+        </>
+      )}
+
+      {mode === "phone-step1" && (
+        <>
+          <TextInput
+            style={[styles.input, phonemailErroror ? styles.inputError : null]}
+            placeholder="Numéro de téléphone (ex: +33612345678)"
+            placeholderTextColor="#888"
+            value={phone}
+            onChangeText={(v) => {
+              setPhone(v);
+              setPhonemailErroror(validatePhone(v));
+            }}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+          />
+          {phonemailErroror ? (
+            <Text style={styles.errorText}>{phonemailErroror}</Text>
+          ) : null}
+
+          {/* Widget reCAPTCHA visible — l'utilisateur coche "Je ne suis pas un robot" */}
+          {Platform.OS === "web" && (
+            <View nativeID="recaptcha-container" style={styles.recaptcha} />
+          )}
+
+          <Pressable style={styles.button} onPress={handleSendCode}>
+            <ThemedText style={styles.buttonText}>Envoyer le code</ThemedText>
+          </Pressable>
+
+          <Pressable onPress={() => setMode("email")}>
+            <Text style={styles.link}>← Retour</Text>
+          </Pressable>
+        </>
+      )}
+
+      {mode === "phone-step2" && (
+        <>
+          <Text style={styles.hint}>Code envoyé au {phone}</Text>
+
+          <TextInput
+            style={[styles.input, smsError ? styles.inputError : null]}
+            placeholder="Code à 6 chiffres"
+            placeholderTextColor="#888"
+            value={smsCode}
+            onChangeText={(v) => {
+              setSmsCode(v);
+              setSmsError("");
+            }}
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          {smsError ? <Text style={styles.errorText}>{smsError}</Text> : null}
+
+          <Pressable style={styles.button} onPress={handleVerifyCode}>
+            <ThemedText style={styles.buttonText}>Vérifier</ThemedText>
+          </Pressable>
+
+          <Pressable onPress={() => setMode("phone-step1")}>
+            <Text style={styles.link}>← Retour</Text>
+          </Pressable>
+        </>
+      )}
     </ThemedView>
   );
 }
@@ -110,6 +283,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -8,
   },
+  recaptcha: {
+    alignItems: "flex-start",
+  },
   button: {
     backgroundColor: "#0a7ea4",
     paddingVertical: 12,
@@ -120,5 +296,31 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  buttonOutline: {
+    borderWidth: 1.5,
+    borderColor: "#0a7ea4",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonOutlineText: {
+    color: "#0a7ea4",
+    fontWeight: "600",
+  },
+  separator: {
+    textAlign: "center",
+    color: "#888",
+    fontSize: 13,
+  },
+  link: {
+    color: "#0a7ea4",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  hint: {
+    color: "#555",
+    fontSize: 14,
+    textAlign: "center",
   },
 });
