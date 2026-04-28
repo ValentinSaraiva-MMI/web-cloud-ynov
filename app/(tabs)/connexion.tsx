@@ -8,9 +8,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { signInWithFacebook } from "../../firebase/auth_facebook_signin_popup";
+import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { signin } from "../../firebase/auth_signin_password";
 import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
-import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { firebaseConfig } from "../../firebaseConfig";
 
 import { ThemedText } from "@/components/themed-text";
@@ -102,6 +103,15 @@ export default function ConnexionScreen() {
       show("Connexion GitHub réussie !", "success");
     } catch {
       show("Erreur lors de la connexion GitHub.", "error");
+    }
+  };
+
+  const handleFacebookSubmit = async () => {
+    try {
+      await signInWithFacebook();
+      show("Connexion Facebook réussie !", "success");
+    } catch {
+      show("Erreur lors de la connexion Facebook.", "error");
     }
   };
 
@@ -205,6 +215,15 @@ export default function ConnexionScreen() {
           <Pressable style={styles.buttonOutline} onPress={handleGithubSubmit}>
             <ThemedText style={styles.buttonOutlineText}>
               Continuer avec GitHub
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={styles.buttonOutline}
+            onPress={handleFacebookSubmit}
+          >
+            <ThemedText style={styles.buttonOutlineText}>
+              Continuer avec Facebook
             </ThemedText>
           </Pressable>
         </>
