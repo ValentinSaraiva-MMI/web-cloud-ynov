@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { signin } from "../../firebase/auth_signin_password";
 import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
+import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { firebaseConfig } from "../../firebaseConfig";
 
 import { ThemedText } from "@/components/themed-text";
@@ -92,6 +93,15 @@ export default function ConnexionScreen() {
       show("Connexion réussie !", "success");
     } catch {
       show("Email ou mot de passe incorrect.", "error");
+    }
+  };
+
+  const handleGithubSubmit = async () => {
+    try {
+      await signinWithGithub();
+      show("Connexion GitHub réussie !", "success");
+    } catch {
+      show("Erreur lors de la connexion GitHub.", "error");
     }
   };
 
@@ -188,7 +198,13 @@ export default function ConnexionScreen() {
             onPress={() => setMode("phone-step1")}
           >
             <ThemedText style={styles.buttonOutlineText}>
-              Par téléphoneeeee
+              Par téléphone
+            </ThemedText>
+          </Pressable>
+
+          <Pressable style={styles.buttonOutline} onPress={handleGithubSubmit}>
+            <ThemedText style={styles.buttonOutlineText}>
+              Continuer avec GitHub
             </ThemedText>
           </Pressable>
         </>
