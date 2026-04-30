@@ -37,6 +37,10 @@ export default function ProfilScreen() {
 
       <ThemedText type="title">Profil</ThemedText>
 
+      {user?.displayName ? (
+        <ThemedText style={styles.greeting}>Bonjour {user.displayName} 👋</ThemedText>
+      ) : null}
+
       <ThemedText style={styles.text}>
         Ici s&apos;affichera prochainement votre profil
       </ThemedText>
@@ -64,6 +68,11 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 80,
     gap: 24,
+  },
+  greeting: {
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
   },
   text: {
     fontSize: 16,

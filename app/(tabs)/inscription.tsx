@@ -13,14 +13,22 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export default function InscriptionScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const { toast, show, hide } = useToast();
   const router = useRouter();
+
+  const validateName = (value: string) => {
+    if (!value.trim()) return "Le nom est requis.";
+    if (value.trim().length < 2) return "Le nom doit faire au moins 2 caractères.";
+    return "";
+  };
 
   const validateEmail = (value: string) => {
     if (!value) return "L'email est requis.";
@@ -42,16 +50,18 @@ export default function InscriptionScreen() {
   };
 
   const handleSubmit = async () => {
+    const nErr = validateName(name);
     const eErr = validateEmail(email);
     const pErr = validatePassword(password);
     const cErr = validateConfirm(confirm, password);
+    setNameError(nErr);
     setEmailError(eErr);
     setPasswordError(pErr);
     setConfirmError(cErr);
-    if (eErr || pErr || cErr) return;
+    if (nErr || eErr || pErr || cErr) return;
 
     try {
-      await signup(email, password);
+      await signup(email, password, name.trim());
       show("Compte créé avec succès !", "success");
       setTimeout(() => router.replace("/profil"), 1500);
     } catch {
@@ -64,6 +74,20 @@ export default function InscriptionScreen() {
       <Toast {...toast} onHide={hide} />
       <ThemedText type="title">Inscriptions</ThemedText>
       <HelloWave></HelloWave>
+
+      <TextInput
+        style={[styles.input, nameError ? styles.inputError : null]}
+        placeholder="Nom"
+        placeholderTextColor="#888"
+        value={name}
+        onChangeText={(v) => {
+          setName(v);
+          setNameError(validateName(v));
+        }}
+        autoCapitalize="words"
+        autoCorrect={false}
+      />
+      {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
       <TextInput
         style={[styles.input, emailError ? styles.inputError : null]}
