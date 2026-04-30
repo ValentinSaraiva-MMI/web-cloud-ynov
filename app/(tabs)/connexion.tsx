@@ -11,6 +11,7 @@ import {
 import { signinAnonymously } from "../../firebase/auth_anonymous_signin";
 import { signInWithFacebook } from "../../firebase/auth_facebook_signin_popup";
 import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
+import { signinWithGoogle } from "../../firebase/auth_google_signin_popup";
 import { signin } from "../../firebase/auth_signin_password";
 import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
 
@@ -105,6 +106,16 @@ export default function ConnexionScreen() {
       setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Erreur lors de la connexion GitHub.", "error");
+    }
+  };
+
+  const handleGoogleSubmit = async () => {
+    try {
+      await signinWithGoogle();
+      show("Connexion Google réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
+    } catch {
+      show("Erreur lors de la connexion Google.", "error");
     }
   };
 
@@ -221,6 +232,12 @@ export default function ConnexionScreen() {
           <Pressable style={styles.buttonOutline} onPress={handleGithubSubmit}>
             <ThemedText style={styles.buttonOutlineText}>
               Continuer avec GitHub
+            </ThemedText>
+          </Pressable>
+
+          <Pressable style={styles.buttonOutline} onPress={handleGoogleSubmit}>
+            <ThemedText style={styles.buttonOutlineText}>
+              Continuer avec Google
             </ThemedText>
           </Pressable>
 

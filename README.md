@@ -13,12 +13,13 @@ Application React Native (Expo) avec authentification multi-méthodes via Fireba
 - Expo Router avec navigation par onglets
 - Pages : **Accueil**, **Connexion**, **Inscription**, **Profil**
 
-### Authentification Firebase (5 méthodes)
+### Authentification Firebase (6 méthodes)
 
 - Email / Mot de passe
 - **Téléphone (OTP)** avec reCAPTCHA visible — fonctionne avec de **vrais numéros** sur la version déployée (Firebase Blaze + SMS réels)
 - GitHub (OAuth via popup)
 - Facebook (OAuth via popup)
+- **Google (OAuth via popup)** — méthode bonus en plus des 5 demandées
 - Connexion anonyme
 
 ### Expérience utilisateur
