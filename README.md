@@ -53,6 +53,7 @@ Un numéro fictif est configuré dans Firebase pour permettre la validation sans
 ## 📸 Build EAS
 
 ![Build EAS Android réussi](docs/eas-build-success.png)
+![Build EAS Android réussi](docs/last-eas-build-success.png)
 
 ## 🛠️ Lancer le projet en local
 
