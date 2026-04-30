@@ -1,3 +1,4 @@
+import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -220,44 +221,49 @@ export default function ConnexionScreen() {
 
           <Text style={styles.separator}>── ou ──</Text>
 
-          <Pressable
-            style={styles.buttonOutline}
-            onPress={() => setMode("phone-step1")}
-          >
-            <ThemedText style={styles.buttonOutlineText}>
-              Par téléphone
-            </ThemedText>
-          </Pressable>
+          <View style={styles.pillRow}>
+            <Pressable
+              style={[styles.pill, styles.phoneButton]}
+              onPress={() => setMode("phone-step1")}
+            >
+              <FontAwesome name="phone" size={14} color="#fff" />
+              <Text style={styles.pillText}>Téléphone</Text>
+            </Pressable>
 
-          <Pressable style={styles.buttonOutline} onPress={handleGithubSubmit}>
-            <ThemedText style={styles.buttonOutlineText}>
-              Continuer avec GitHub
-            </ThemedText>
-          </Pressable>
+            <Pressable
+              style={[styles.pill, styles.githubButton]}
+              onPress={handleGithubSubmit}
+            >
+              <FontAwesome name="github" size={14} color="#fff" />
+              <Text style={styles.pillText}>GitHub</Text>
+            </Pressable>
 
-          <Pressable style={styles.buttonOutline} onPress={handleGoogleSubmit}>
-            <ThemedText style={styles.buttonOutlineText}>
-              Continuer avec Google
-            </ThemedText>
-          </Pressable>
+            <Pressable
+              style={[styles.pill, styles.googleButton]}
+              onPress={handleGoogleSubmit}
+            >
+              <FontAwesome name="google" size={14} color="#4285F4" />
+              <Text style={[styles.pillText, { color: "#3c4043" }]}>
+                Google
+              </Text>
+            </Pressable>
 
-          <Pressable
-            style={styles.buttonOutline}
-            onPress={handleFacebookSubmit}
-          >
-            <ThemedText style={styles.buttonOutlineText}>
-              Continuer avec Facebook
-            </ThemedText>
-          </Pressable>
+            <Pressable
+              style={[styles.pill, styles.facebookButton]}
+              onPress={handleFacebookSubmit}
+            >
+              <FontAwesome name="facebook" size={14} color="#fff" />
+              <Text style={styles.pillText}>Facebook</Text>
+            </Pressable>
 
-          <Pressable
-            style={styles.buttonOutline}
-            onPress={handleAnonymousSubmit}
-          >
-            <ThemedText style={styles.buttonOutlineText}>
-              Continuer anonymement
-            </ThemedText>
-          </Pressable>
+            <Pressable
+              style={[styles.pill, styles.anonymousButton]}
+              onPress={handleAnonymousSubmit}
+            >
+              <FontAwesome name="user-secret" size={14} color="#fff" />
+              <Text style={styles.pillText}>Anonyme</Text>
+            </Pressable>
+          </View>
         </>
       )}
 
@@ -374,6 +380,42 @@ const styles = StyleSheet.create({
   buttonOutlineText: {
     color: "#0a7ea4",
     fontWeight: "600",
+  },
+  pillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  pillText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  phoneButton: {
+    backgroundColor: "#25D366",
+  },
+  githubButton: {
+    backgroundColor: "#24292e",
+  },
+  googleButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#dadce0",
+  },
+  facebookButton: {
+    backgroundColor: "#1877F2",
+  },
+  anonymousButton: {
+    backgroundColor: "#6c757d",
   },
   separator: {
     textAlign: "center",
