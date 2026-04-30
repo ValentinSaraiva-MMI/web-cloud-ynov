@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { signinAnonymously } from "../../firebase/auth_anonymous_signin";
 import { signInWithFacebook } from "../../firebase/auth_facebook_signin_popup";
 import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { signin } from "../../firebase/auth_signin_password";
@@ -112,6 +113,15 @@ export default function ConnexionScreen() {
     }
   };
 
+  const handleAnonymousSubmit = async () => {
+    try {
+      await signinAnonymously();
+      show("Connexion anonyme réussie !", "success");
+    } catch {
+      show("Erreur lors de la connexion anonyme.", "error");
+    }
+  };
+
   const handleSendCode = async () => {
     const phonemailErroror = validatePhone(phone);
     setPhonemailErroror(phonemailErroror);
@@ -213,6 +223,15 @@ export default function ConnexionScreen() {
           >
             <ThemedText style={styles.buttonOutlineText}>
               Continuer avec Facebook
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={styles.buttonOutline}
+            onPress={handleAnonymousSubmit}
+          >
+            <ThemedText style={styles.buttonOutlineText}>
+              Continuer anonymement
             </ThemedText>
           </Pressable>
         </>
