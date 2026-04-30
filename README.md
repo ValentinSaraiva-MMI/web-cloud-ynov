@@ -1,50 +1,61 @@
-# Welcome to your Expo app 👋
+# Web Cloud Ynov — Livrable 1
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application React Native (Expo) avec authentification multi-méthodes via Firebase et déploiement continu sur GitHub Pages + EAS.
 
-## Get started
+## 🚀 Application déployée
 
-1. Install dependencies
+**Lien web :** [https://valentinsaraiva-mmi.github.io/web-cloud-ynov](https://valentinsaraiva-mmi.github.io/web-cloud-ynov)
 
-   ```bash
-   npm install
-   ```
+## ✅ Fonctionnalités
 
-2. Start the app
+### Architecture
+- Expo Router avec navigation par onglets
+- Pages : **Accueil**, **Connexion**, **Inscription**, **Profil**
 
-   ```bash
-   npx expo start
-   ```
+### Authentification Firebase (5 méthodes)
+- Email / Mot de passe
+- Téléphone (OTP) avec reCAPTCHA visible
+- GitHub (OAuth via popup)
+- Facebook (OAuth via popup)
+- Connexion anonyme
 
-In the output, you'll find options to open the app in a
+### Expérience utilisateur
+- Validation en temps réel des formulaires (email, mot de passe fort, nom, numéro)
+- Toaster animé sur succès / erreur
+- Redirection automatique vers le profil après connexion ou inscription
+- Redirection vers la connexion après déconnexion
+- Bouton de déconnexion désactivé si aucun utilisateur n'est connecté
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### CI/CD
+- Workflow GitHub Actions qui :
+  - Déploie automatiquement la version web sur GitHub Pages à chaque push sur `main`
+  - Build l'application Android via EAS
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🧪 Tester la connexion par téléphone
 
-## Get a fresh project
+Un numéro de test est configuré dans Firebase pour permettre la validation sans envoyer de SMS réel :
 
-When you're ready, run:
+| Numéro de téléphone   | Code de validation |
+|------------------------|--------------------|
+| `+33 6 42 42 42 42`    | `123456`           |
+
+## 📸 Build EAS
+
+![Build EAS Android réussi](docs/eas-build-success.png)
+
+## 🛠️ Lancer le projet en local
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Puis sélectionner la cible (web, iOS, Android) dans la console Expo.
 
-## Learn more
+## 📦 Stack technique
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Expo SDK 54** + Expo Router
+- **React Native 0.81** + React 19
+- **Firebase 12** (Auth)
+- **TypeScript**
+- **EAS Build** + **GitHub Actions** + **gh-pages**
