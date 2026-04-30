@@ -1,4 +1,3 @@
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import { useEffect, useRef, useState } from "react";
 import {
   Platform,
@@ -12,7 +11,6 @@ import { signInWithFacebook } from "../../firebase/auth_facebook_signin_popup";
 import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { signin } from "../../firebase/auth_signin_password";
 import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
-import { firebaseConfig } from "../../firebaseConfig";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -37,7 +35,6 @@ export default function ConnexionScreen() {
   const [smsError, setSmsError] = useState("");
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
 
-  const recaptchaRef = useRef<any>(null);
   const webVerifierRef = useRef<any>(null);
   const { toast, show, hide } = useToast();
 
@@ -121,8 +118,7 @@ export default function ConnexionScreen() {
     if (phonemailErroror) return;
 
     try {
-      const appVerifier =
-        Platform.OS === "web" ? webVerifierRef.current : recaptchaRef.current;
+      const appVerifier = webVerifierRef.current;
       const result = await sendSmsCode(phone, appVerifier);
       setConfirmationResult(result);
       setMode("phone-step2");
@@ -153,13 +149,6 @@ export default function ConnexionScreen() {
   return (
     <ThemedView style={styles.container}>
       <Toast {...toast} onHide={hide} />
-
-      {Platform.OS !== "web" && (
-        <FirebaseRecaptchaVerifierModal
-          ref={recaptchaRef}
-          firebaseConfig={firebaseConfig}
-        />
-      )}
 
       <ThemedText type="title">Connexion</ThemedText>
 
