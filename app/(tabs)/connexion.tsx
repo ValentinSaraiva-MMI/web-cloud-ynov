@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Platform,
@@ -38,6 +39,7 @@ export default function ConnexionScreen() {
 
   const webVerifierRef = useRef<any>(null);
   const { toast, show, hide } = useToast();
+  const router = useRouter();
 
   // Initialise le reCAPTCHA visible dès l'entrée en mode téléphone
   useEffect(() => {
@@ -90,6 +92,7 @@ export default function ConnexionScreen() {
     try {
       await signin(email, password);
       show("Connexion réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Email ou mot de passe incorrect.", "error");
     }
@@ -99,6 +102,7 @@ export default function ConnexionScreen() {
     try {
       await signinWithGithub();
       show("Connexion GitHub réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Erreur lors de la connexion GitHub.", "error");
     }
@@ -108,6 +112,7 @@ export default function ConnexionScreen() {
     try {
       await signInWithFacebook();
       show("Connexion Facebook réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Erreur lors de la connexion Facebook.", "error");
     }
@@ -117,6 +122,7 @@ export default function ConnexionScreen() {
     try {
       await signinAnonymously();
       show("Connexion anonyme réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Erreur lors de la connexion anonyme.", "error");
     }
@@ -151,6 +157,7 @@ export default function ConnexionScreen() {
     try {
       await verifySmsCode(confirmationResult, smsCode);
       show("Connexion réussie !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Code incorrect ou expiré.", "error");
     }

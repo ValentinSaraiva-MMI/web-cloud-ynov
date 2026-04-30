@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 import { signup } from "../../firebase/auth_signup_password";
@@ -19,6 +20,7 @@ export default function InscriptionScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const { toast, show, hide } = useToast();
+  const router = useRouter();
 
   const validateEmail = (value: string) => {
     if (!value) return "L'email est requis.";
@@ -51,6 +53,7 @@ export default function InscriptionScreen() {
     try {
       await signup(email, password);
       show("Compte créé avec succès !", "success");
+      setTimeout(() => router.replace("/profil"), 1500);
     } catch {
       show("Cette adresse email est déjà utilisée.", "error");
     }
