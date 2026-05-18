@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { updateUserProfile } from "../../firebase/auth_update_profile";
 import { signout } from "../../firebase/auth_signout";
 import "../../firebaseConfig";
 
@@ -13,9 +14,18 @@ export default function ProfilScreen() {
   const router = useRouter();
   const { toast, show, hide } = useToast();
   const [user, setUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getAuth(), (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(getAuth(), (u) => {
+      setUser(u);
+      if (u) {
+        setDisplayName(u.displayName ?? "");
+        setPhotoURL(u.photoURL ?? "");
+      }
+    });
     return unsubscribe;
   }, []);
 
@@ -29,75 +39,220 @@ export default function ProfilScreen() {
     }
   };
 
-  const isLoggedIn = !!user;
+  const handleUpdateProfile = async () => {
+    try {
+      await updateUserProfile(displayName, photoURL);
+      setUser(getAuth().currentUser);
+      setIsEditing(false);
+      show("Profil mis à jour !", "success");
+    } catch {
+      show("Erreur lors de la mise à jour.", "error");
+    }
+  };
+
+  if (!user) {
+    return (
+      <ThemedView style={styles.container}>
+        <Toast {...toast} onHide={hide} />
+        <ThemedText type="title">Profil</ThemedText>
+        <Text style={styles.warning}>Vous n&apos;êtes pas connecté</Text>
+        <Pressable style={styles.button} onPress={() => router.replace("/connexion")}>
+          <Text style={styles.buttonText}>Se connecter</Text>
+        </Pressable>
+      </ThemedView>
+    );
+  }
 
   return (
-    <ThemedView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Toast {...toast} onHide={hide} />
 
       <ThemedText type="title">Profil</ThemedText>
 
-      {user?.displayName ? (
-        <ThemedText style={styles.greeting}>Bonjour {user.displayName} 👋</ThemedText>
-      ) : null}
-
-      <ThemedText style={styles.text}>
-        Ici s&apos;affichera prochainement votre profil
-      </ThemedText>
-
-      {!isLoggedIn && (
-        <Text style={styles.warning}>
-          Vous n&apos;êtes actuellement pas connecté
-        </Text>
+      {user.photoURL ? (
+        <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+      ) : (
+        <View style={styles.avatarPlaceholder}>
+          <Text style={styles.avatarInitial}>
+            {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "?"}
+          </Text>
+        </View>
       )}
 
-      <Pressable
-        style={[styles.button, !isLoggedIn && styles.buttonDisabled]}
-        onPress={handleSignout}
-        disabled={!isLoggedIn}
-      >
-        <ThemedText style={styles.buttonText}>Se déconnecter</ThemedText>
+      <View style={styles.infoCard}>
+        <ThemedText type="subtitle">Informations</ThemedText>
+
+        <InfoRow label="Nom" value={user.displayName ?? "—"} />
+        <InfoRow label="Email" value={user.email ?? "—"} />
+        <InfoRow label="UID" value={user.uid} mono />
+        <InfoRow label="Email vérifié" value={user.emailVerified ? "Oui" : "Non"} />
+        <InfoRow label="Photo URL" value={user.photoURL ?? "—"} />
+
+        <ThemedText style={styles.providerTitle}>Providers</ThemedText>
+        {user.providerData.map((profile) => (
+          <InfoRow key={profile.providerId} label="Provider" value={profile.providerId} />
+        ))}
+      </View>
+
+      {isEditing ? (
+        <View style={styles.infoCard}>
+          <ThemedText type="subtitle">Modifier le profil</ThemedText>
+
+          <Text style={styles.label}>Nom affiché</Text>
+          <TextInput
+            style={styles.input}
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Votre nom"
+          />
+
+          <Text style={styles.label}>URL de la photo</Text>
+          <TextInput
+            style={styles.input}
+            value={photoURL}
+            onChangeText={setPhotoURL}
+            placeholder="https://..."
+            autoCapitalize="none"
+          />
+
+          <View style={styles.row}>
+            <Pressable style={[styles.button, styles.buttonSecondary]} onPress={() => setIsEditing(false)}>
+              <Text style={[styles.buttonText, { color: "#333" }]}>Annuler</Text>
+            </Pressable>
+            <Pressable style={styles.button} onPress={handleUpdateProfile}>
+              <Text style={styles.buttonText}>Enregistrer</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable style={[styles.button, styles.buttonOutline]} onPress={() => setIsEditing(true)}>
+          <Text style={[styles.buttonText, { color: "#1565c0" }]}>Modifier le profil</Text>
+        </Pressable>
+      )}
+
+      <Pressable style={[styles.button, styles.buttonDanger]} onPress={handleSignout}>
+        <Text style={styles.buttonText}>Se déconnecter</Text>
       </Pressable>
-    </ThemedView>
+    </ScrollView>
+  );
+}
+
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={[styles.infoValue, mono && styles.mono]} numberOfLines={1} ellipsizeMode="middle">
+        {value}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 24,
     paddingTop: 80,
-    gap: 24,
+    paddingBottom: 40,
+    gap: 16,
   },
-  greeting: {
-    fontSize: 18,
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignSelf: "center",
+  },
+  avatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#1565c0",
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: {
+    color: "#fff",
+    fontSize: 36,
+    fontWeight: "700",
+  },
+  infoCard: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  infoLabel: {
     fontWeight: "600",
-    textAlign: "center",
+    color: "#555",
+    flex: 1,
   },
-  text: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 16,
+  infoValue: {
+    color: "#222",
+    flex: 2,
+    textAlign: "right",
+  },
+  mono: {
+    fontFamily: "monospace",
+    fontSize: 11,
+    color: "#666",
+  },
+  providerTitle: {
+    fontWeight: "600",
+    marginTop: 8,
+  },
+  label: {
+    fontWeight: "600",
+    color: "#555",
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    backgroundColor: "#fff",
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  button: {
+    backgroundColor: "#1565c0",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    flex: 1,
+  },
+  buttonSecondary: {
+    backgroundColor: "#e0e0e0",
+  },
+  buttonOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#1565c0",
+  },
+  buttonDanger: {
+    backgroundColor: "#e53935",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
   },
   warning: {
     color: "#e53935",
     fontSize: 14,
     textAlign: "center",
     fontStyle: "italic",
-  },
-  button: {
-    backgroundColor: "#e53935",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonDisabled: {
-    backgroundColor: "#aaa",
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
   },
 });
