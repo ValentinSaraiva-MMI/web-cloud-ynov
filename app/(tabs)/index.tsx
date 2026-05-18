@@ -1,20 +1,36 @@
-import { StyleSheet } from 'react-native';
+import { Link } from "expo-router";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { getPostData } from "../../firebase/get_post_data";
 
-import { HelloWave } from '@/components/hello-wave';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 
 export default function HomeScreen() {
+  type Post = { id: string; title: string; text: string; createdBy: string; date: Date };
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getPostData();
+      console.log(data);
+      setPosts(data as Post[]);
+    };
+    fetchData();
+  }, []);
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Bienvenue !</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedText>
-        Bienvenue sur l&apos;application web-cloud-ynov. Utilise la barre du bas
-        pour te connecter ou créer un compte.
-      </ThemedText>
+      <ThemedText type="title">Bienvenue</ThemedText>
+      <Link href="/newpost" style={styles.link}>
+        Créer un nouveau post
+      </Link>
+      {posts.map((p) => (
+        <View key={p.id} style={styles.item}>
+          <Text style={styles.itemTitle}>{p.title}</Text>
+          <Text>{p.text}</Text>
+        </View>
+      ))}
     </ThemedView>
   );
 }
@@ -26,9 +42,19 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     gap: 16,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  link: {
+    color: "#1565c0",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  item: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    padding: 12,
+    gap: 4,
+  },
+  itemTitle: {
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
