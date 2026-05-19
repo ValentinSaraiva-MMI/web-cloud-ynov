@@ -1,9 +1,10 @@
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { getCommentData } from "../../firebase/get_comment_data";
+import { deletePost } from "../../firebase/delete_post";
 import { getLikes } from "../../firebase/get_likes";
 import { toggleLike } from "../../firebase/toggle_like";
 import "../../firebaseConfig";
@@ -13,11 +14,12 @@ import { ThemedText } from "@/components/themed-text";
 
 const db = getFirestore(app, "bddvalentin");
 
-type Post = { id: string; title: string; text: string; createdBy: string; imageUrl?: string };
+type Post = { id: string; title: string; text: string; createdBy: string; createdByUid?: string; imageUrl?: string };
 type Comment = { id: string; text: string; createdBy: string };
 
 export default function BlogPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [likesCount, setLikesCount] = useState(0);
@@ -45,6 +47,26 @@ export default function BlogPage() {
     fetchComments();
     fetchLikes();
   }, [slug]);
+
+  const handleDelete = async () => {
+    if (Platform.OS === "web") {
+      if (!window.confirm("Supprimer ce post ? Cette action est irréversible.")) return;
+      await deletePost(slug);
+      router.replace("/");
+    } else {
+      Alert.alert("Supprimer le post", "Cette action est irréversible.", [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            await deletePost(slug);
+            router.replace("/");
+          },
+        },
+      ]);
+    }
+  };
 
   const handleToggleLike = async () => {
     if (!user || likeLoading) return;
@@ -95,6 +117,12 @@ export default function BlogPage() {
           <Text style={styles.likeHint}>Connectez-vous pour liker.</Text>
         )}
       </View>
+
+      {user && post.createdByUid === user.uid && (
+        <Pressable style={styles.deleteButton} onPress={handleDelete}>
+          <Text style={styles.deleteButtonText}>Supprimer ce post</Text>
+        </Pressable>
+      )}
 
       <View style={styles.divider} />
 
@@ -217,5 +245,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     fontStyle: "italic",
+  },
+  deleteButton: {
+    borderWidth: 1.5,
+    borderColor: "#e53935",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    color: "#e53935",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

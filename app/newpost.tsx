@@ -57,7 +57,7 @@ export default function NewPostScreen() {
         const fileName = `post_${Date.now()}_${imageUri.split("/").pop()}`;
         imageUrl = await uploadToFirebase(imageUri, fileName);
       }
-      await createPost(title.trim(), text.trim(), user.displayName ?? user.email, imageUrl);
+      await createPost(title.trim(), text.trim(), user.displayName ?? user.email, imageUrl, user.uid);
       show("Post créé !", "success");
       setTimeout(() => router.replace("/"), 1500);
     } catch (e: any) {
