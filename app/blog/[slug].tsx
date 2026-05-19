@@ -2,8 +2,10 @@ import { Link, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { getCommentData } from "../../firebase/get_comment_data";
+import { getLikes } from "../../firebase/get_likes";
+import { toggleLike } from "../../firebase/toggle_like";
 import "../../firebaseConfig";
 import app from "../../firebaseConfig";
 
@@ -11,13 +13,16 @@ import { ThemedText } from "@/components/themed-text";
 
 const db = getFirestore(app, "bddvalentin");
 
-type Post = { id: string; title: string; text: string; createdBy: string };
+type Post = { id: string; title: string; text: string; createdBy: string; imageUrl?: string };
 type Comment = { id: string; text: string; createdBy: string };
 
 export default function BlogPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [likesCount, setLikesCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
   const user = getAuth().currentUser;
 
   useEffect(() => {
@@ -31,9 +36,31 @@ export default function BlogPage() {
       const data = await getCommentData(slug);
       setComments(data as Comment[]);
     };
+    const fetchLikes = async () => {
+      const data = await getLikes(slug, user?.uid ?? null);
+      setLikesCount(data.count);
+      setLiked(data.liked);
+    };
     fetchPost();
     fetchComments();
+    fetchLikes();
   }, [slug]);
+
+  const handleToggleLike = async () => {
+    if (!user || likeLoading) return;
+    setLikeLoading(true);
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikesCount((c) => (newLiked ? c + 1 : c - 1));
+    try {
+      await toggleLike(slug, user.uid, !newLiked);
+    } catch {
+      setLiked(!newLiked);
+      setLikesCount((c) => (newLiked ? c - 1 : c + 1));
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   if (!post) {
     return (
@@ -47,7 +74,27 @@ export default function BlogPage() {
     <ScrollView contentContainerStyle={styles.container}>
       <ThemedText type="title">{post.title}</ThemedText>
       <Text style={styles.author}>Par {post.createdBy}</Text>
+
+      {post.imageUrl && (
+        <Image source={{ uri: post.imageUrl }} style={styles.postImage} resizeMode="cover" />
+      )}
+
       <Text style={styles.text}>{post.text}</Text>
+
+      <View style={styles.likeRow}>
+        <Pressable
+          style={[styles.likeButton, liked && styles.likeButtonActive]}
+          onPress={handleToggleLike}
+          disabled={!user || likeLoading}
+        >
+          <Text style={[styles.likeButtonText, liked && styles.likeButtonTextActive]}>
+            {liked ? "❤️" : "🤍"} {likesCount} {likesCount === 1 ? "J'aime" : "J'aime"}
+          </Text>
+        </Pressable>
+        {!user && (
+          <Text style={styles.likeHint}>Connectez-vous pour liker.</Text>
+        )}
+      </View>
 
       <View style={styles.divider} />
 
@@ -91,9 +138,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: "italic",
   },
+  postImage: {
+    width: "100%",
+    height: 220,
+    borderRadius: 10,
+    marginVertical: 4,
+  },
   text: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  likeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  likeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+  likeButtonActive: {
+    borderColor: "#e53935",
+    backgroundColor: "#fdecea",
+  },
+  likeButtonText: {
+    fontSize: 15,
+    color: "#555",
+    fontWeight: "600",
+  },
+  likeButtonTextActive: {
+    color: "#e53935",
+  },
+  likeHint: {
+    color: "#999",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   divider: {
     height: 1,

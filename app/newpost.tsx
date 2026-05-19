@@ -1,8 +1,10 @@
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { createPost } from "../firebase/add_post_data";
+import { uploadToFirebase } from "../firebase/storage_upload_file";
 import "../firebaseConfig";
 
 import { ThemedText } from "@/components/themed-text";
@@ -14,6 +16,7 @@ export default function NewPostScreen() {
   const { toast, show, hide } = useToast();
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const user = getAuth().currentUser;
@@ -31,6 +34,17 @@ export default function NewPostScreen() {
     );
   }
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!title.trim() || !text.trim()) {
       show("Veuillez remplir tous les champs.", "error");
@@ -38,7 +52,12 @@ export default function NewPostScreen() {
     }
     setLoading(true);
     try {
-      await createPost(title.trim(), text.trim(), user.displayName ?? user.email);
+      let imageUrl: string | null = null;
+      if (imageUri) {
+        const fileName = `post_${Date.now()}_${imageUri.split("/").pop()}`;
+        imageUrl = await uploadToFirebase(imageUri, fileName);
+      }
+      await createPost(title.trim(), text.trim(), user.displayName ?? user.email, imageUrl);
       show("Post créé !", "success");
       setTimeout(() => router.replace("/"), 1500);
     } catch (e: any) {
@@ -72,6 +91,22 @@ export default function NewPostScreen() {
         numberOfLines={6}
       />
 
+      <Text style={styles.label}>Image (optionnel)</Text>
+      <Pressable style={styles.imagePicker} onPress={pickImage}>
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imagePlaceholderText}>Appuyer pour choisir une image</Text>
+          </View>
+        )}
+      </Pressable>
+      {imageUri && (
+        <Pressable onPress={() => setImageUri(null)}>
+          <Text style={styles.removeImage}>Supprimer l&apos;image</Text>
+        </Pressable>
+      )}
+
       <Pressable style={[styles.button, loading && styles.buttonDisabled]} onPress={handleSubmit} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? "Envoi..." : "Publier"}</Text>
       </Pressable>
@@ -102,6 +137,35 @@ const styles = StyleSheet.create({
   inputMultiline: {
     minHeight: 120,
     textAlignVertical: "top",
+  },
+  imagePicker: {
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+  },
+  imagePlaceholder: {
+    height: 120,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagePlaceholderText: {
+    color: "#999",
+    fontSize: 14,
+  },
+  removeImage: {
+    color: "#e53935",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: -4,
   },
   button: {
     backgroundColor: "#1565c0",

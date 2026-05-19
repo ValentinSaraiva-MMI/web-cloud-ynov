@@ -4,13 +4,14 @@ import { collection, addDoc } from "firebase/firestore";
 
 const db = getFirestore(app, "bddvalentin");
 
-export const createPost = async (title, text, createdBy) => {
+export const createPost = async (title, text, createdBy, imageUrl) => {
   try {
     const docRef = await addDoc(collection(db, "posts"), {
       title,
       text,
       date: new Date(),
       createdBy,
+      ...(imageUrl ? { imageUrl } : {}),
     });
     console.log("Document written with ID: ", docRef.id);
   } catch (e) {
