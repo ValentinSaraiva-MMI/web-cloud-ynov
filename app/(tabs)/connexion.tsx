@@ -1,5 +1,6 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import {
   Platform,
@@ -15,6 +16,7 @@ import { signinWithGithub } from "../../firebase/auth_github_signin_popup";
 import { signinWithGoogle } from "../../firebase/auth_google_signin_popup";
 import { signin } from "../../firebase/auth_signin_password";
 import { sendSmsCode, verifySmsCode } from "../../firebase/auth_signin_phone";
+import { signout } from "../../firebase/auth_signout";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -27,6 +29,13 @@ const PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
 type Mode = "email" | "phone-step1" | "phone-step2";
 
 export default function ConnexionScreen() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(getAuth(), setCurrentUser);
+    return unsubscribe;
+  }, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -64,6 +73,42 @@ export default function ConnexionScreen() {
       webVerifierRef.current = null;
     }
   }, [mode]);
+
+  const handleSignout = async () => {
+    try {
+      await signout();
+      show("Déconnexion réussie !", "success");
+    } catch {
+      show("Erreur lors de la déconnexion.", "error");
+    }
+  };
+
+  if (currentUser) {
+    return (
+      <ThemedView style={styles.container}>
+        <Toast {...toast} onHide={hide} />
+        <ThemedText type="title">Connexion</ThemedText>
+
+        <View style={styles.connectedCard}>
+          <Text style={styles.connectedLabel}>Connecté en tant que</Text>
+          <Text style={styles.connectedName}>
+            {currentUser.displayName ?? currentUser.email ?? "Utilisateur anonyme"}
+          </Text>
+          {currentUser.email && currentUser.displayName && (
+            <Text style={styles.connectedEmail}>{currentUser.email}</Text>
+          )}
+        </View>
+
+        <Pressable style={styles.button} onPress={() => router.replace("/profil")}>
+          <ThemedText style={styles.buttonText}>Voir mon profil</ThemedText>
+        </Pressable>
+
+        <Pressable style={styles.buttonDanger} onPress={handleSignout}>
+          <Text style={styles.buttonText}>Se déconnecter</Text>
+        </Pressable>
+      </ThemedView>
+    );
+  }
 
   const validateEmail = (value: string) => {
     if (!value) return "L'email est requis.";
@@ -431,5 +476,33 @@ const styles = StyleSheet.create({
     color: "#555",
     fontSize: 14,
     textAlign: "center",
+  },
+  connectedCard: {
+    backgroundColor: "#e8f5e9",
+    borderRadius: 12,
+    padding: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#a5d6a7",
+  },
+  connectedLabel: {
+    fontSize: 12,
+    color: "#555",
+    fontStyle: "italic",
+  },
+  connectedName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1b5e20",
+  },
+  connectedEmail: {
+    fontSize: 13,
+    color: "#555",
+  },
+  buttonDanger: {
+    backgroundColor: "#e53935",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
   },
 });
