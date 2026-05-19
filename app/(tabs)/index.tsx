@@ -1,10 +1,9 @@
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { getPostData } from "../../firebase/get_post_data";
 
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 
 export default function HomeScreen() {
   type Post = { id: string; title: string; text: string; createdBy: string; date: Date };
@@ -20,18 +19,21 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <ThemedText type="title">Bienvenue</ThemedText>
       <Link href="/newpost" style={styles.link}>
         Créer un nouveau post
       </Link>
       {posts.map((p) => (
-        <View key={p.id} style={styles.item}>
-          <Text style={styles.itemTitle}>{p.title}</Text>
-          <Text>{p.text}</Text>
-        </View>
+        <Link key={p.id} href={`/blog/${p.id}`} asChild>
+          <Pressable style={styles.item}>
+            <Text style={styles.itemTitle}>{p.title}</Text>
+            <Text numberOfLines={2}>{p.text}</Text>
+            <Text style={styles.author}>Par {p.createdBy}</Text>
+          </Pressable>
+        </Link>
       ))}
-    </ThemedView>
+    </ScrollView>
   );
 }
 
@@ -56,5 +58,10 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontWeight: "700",
     fontSize: 16,
+  },
+  author: {
+    color: "#888",
+    fontSize: 12,
+    fontStyle: "italic",
   },
 });
