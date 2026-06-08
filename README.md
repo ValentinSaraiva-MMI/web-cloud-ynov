@@ -2,6 +2,9 @@
 
 Application React Native (Expo) avec authentification multi-méthodes via Firebase et déploiement continu sur GitHub Pages + EAS.
 
+## Sujet choisis 
+**1**
+
 ## 🚀 Application déployée
 
 **Lien web :** [https://valentinsaraiva-mmi.github.io/web-cloud-ynov](https://valentinsaraiva-mmi.github.io/web-cloud-ynov)
